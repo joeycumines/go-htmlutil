@@ -1,7 +1,6 @@
 package htmlutil
 
 import (
-	"bytes"
 	"errors"
 	"golang.org/x/net/html"
 	"io"
@@ -59,15 +58,16 @@ func (n Node) GetAttributeValue(namespace string, key string, attributes ...html
 	return GetAttributeValue(namespace, key, n.Attributes()...)
 }
 
+func (n Node) EncodeHTML() string {
+	return EncodeHTML(n.Data)
+}
+
+func (n Node) EncodeText() string {
+	return EncodeText(n.Data)
+}
+
 func (n Node) String() string {
-	if n.Data == nil {
-		return ""
-	}
-	buffer := new(bytes.Buffer)
-	if err := html.Render(buffer, n.Data); err != nil {
-		panic(err)
-	}
-	return buffer.String()
+	return n.EncodeHTML()
 }
 
 func (n Node) Children() (children []Node) {
@@ -83,7 +83,15 @@ func (n Node) Children() (children []Node) {
 func (n Node) InnerHTML() string {
 	var b []byte
 	for _, child := range n.Children() {
-		b = append(b, []byte(child.String())...)
+		b = append(b, []byte(child.EncodeHTML())...)
+	}
+	return string(b)
+}
+
+func (n Node) InnerText() string {
+	var b []byte
+	for _, child := range n.Children() {
+		b = append(b, []byte(child.EncodeText())...)
 	}
 	return string(b)
 }

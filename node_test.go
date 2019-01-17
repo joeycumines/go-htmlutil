@@ -38,4 +38,16 @@ THREE
 ` {
 		t.Fatal(v)
 	}
+	if v := node.InnerText(); v != `
+
+ONETWO
+
+THREE
+
+
+FOUR   !
+
+` {
+		t.Fatal(v)
+	}
 }
