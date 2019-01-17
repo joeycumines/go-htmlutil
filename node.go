@@ -1,6 +1,7 @@
 package htmlutil
 
 import (
+	"bytes"
 	"errors"
 	"golang.org/x/net/html"
 	"io"
@@ -56,4 +57,15 @@ func (n Node) GetAttribute(namespace string, key string) (html.Attribute, bool) 
 
 func (n Node) GetAttributeValue(namespace string, key string, attributes ...html.Attribute) string {
 	return GetAttributeValue(namespace, key, n.Attributes()...)
+}
+
+func (n Node) String() string {
+	if n.Data == nil {
+		return ""
+	}
+	buffer := new(bytes.Buffer)
+	if err := html.Render(buffer, n.Data); err != nil {
+		panic(err)
+	}
+	return buffer.String()
 }
