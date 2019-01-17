@@ -69,3 +69,21 @@ func (n Node) String() string {
 	}
 	return buffer.String()
 }
+
+func (n Node) Children() (children []Node) {
+	if n.Data == nil {
+		return
+	}
+	for c := n.Data.FirstChild; c != nil; c = c.NextSibling {
+		children = append(children, Node{Data: c})
+	}
+	return
+}
+
+func (n Node) InnerHTML() string {
+	var b []byte
+	for _, child := range n.Children() {
+		b = append(b, []byte(child.String())...)
+	}
+	return string(b)
+}
