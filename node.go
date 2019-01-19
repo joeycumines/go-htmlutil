@@ -8,8 +8,8 @@ type Node struct {
 	Data *html.Node
 }
 
-func (n Node) FilterElements(filters ...func(node *html.Node) bool) []Node {
-	nodes := FilterElements(n.Data, filters...)
+func (n Node) FilterNodes(filters ...func(node *html.Node) bool) []Node {
+	nodes := FilterNodes(n.Data, filters...)
 	if nodes == nil {
 		return nil
 	}
@@ -22,8 +22,8 @@ func (n Node) FilterElements(filters ...func(node *html.Node) bool) []Node {
 	return result
 }
 
-func (n Node) FindElement(filters ...func(node *html.Node) bool) (Node, bool) {
-	node, ok := FindElement(n.Data, filters...)
+func (n Node) FindNode(filters ...func(node *html.Node) bool) (Node, bool) {
+	node, ok := FindNode(n.Data, filters...)
 	return Node{Data: node}, ok
 }
 

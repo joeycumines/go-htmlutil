@@ -13,7 +13,7 @@ func Parse(r io.Reader, filters ...func(node *html.Node) bool) (Node, error) {
 	if err != nil {
 		return Node{}, err
 	}
-	node, ok := FindElement(node, filters...)
+	node, ok := FindNode(node, filters...)
 	if !ok {
 		return Node{}, errors.New("htmlutil.Parse no match")
 	}
@@ -52,18 +52,18 @@ func GetAttributeValue(namespace string, key string, attributes ...html.Attribut
 	return result.Val
 }
 
-func FilterElements(node *html.Node, filters ...func(node *html.Node) bool) []*html.Node {
-	return filterElements(
-		filterElementsConfig{
+func FilterNodes(node *html.Node, filters ...func(node *html.Node) bool) []*html.Node {
+	return filterNodes(
+		filterNodesConfig{
 			Node:    node,
 			Filters: filters,
 		},
 	)
 }
 
-func FindElement(node *html.Node, filters ...func(node *html.Node) bool) (*html.Node, bool) {
-	elements := filterElements(
-		filterElementsConfig{
+func FindNode(node *html.Node, filters ...func(node *html.Node) bool) (*html.Node, bool) {
+	elements := filterNodes(
+		filterNodesConfig{
 			Node:    node,
 			Filters: filters,
 			Find:    true,

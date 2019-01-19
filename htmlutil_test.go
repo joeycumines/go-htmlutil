@@ -29,7 +29,7 @@ func parseElement(s string) Node {
 	)
 }
 
-func TestFilterElements(t *testing.T) {
+func TestFilterNodes(t *testing.T) {
 	type TestCase struct {
 		Input   string
 		Filters []func(node *html.Node) bool
@@ -135,13 +135,13 @@ func TestFilterElements(t *testing.T) {
 		},
 	}
 	for i, testCase := range testCases {
-		name := fmt.Sprintf("FilterElements_#%d", i+1)
+		name := fmt.Sprintf("FilterNodes_#%d", i+1)
 		input, err := html.Parse(bytes.NewReader([]byte(testCase.Input)))
 		if err != nil {
 			t.Fatal(name, err)
 		}
 		var output []string
-		for i, v := range FilterElements(input, testCase.Filters...) {
+		for i, v := range FilterNodes(input, testCase.Filters...) {
 			buffer := new(bytes.Buffer)
 			if err := html.Render(buffer, v); err != nil {
 				t.Fatal(name, i, err)
@@ -157,7 +157,7 @@ func TestFilterElements(t *testing.T) {
 	}
 }
 
-func TestFindElement(t *testing.T) {
+func TestFindNode(t *testing.T) {
 	type TestCase struct {
 		Input   string
 		Filters []func(node *html.Node) bool
@@ -264,13 +264,13 @@ func TestFindElement(t *testing.T) {
 		},
 	}
 	for i, testCase := range testCases {
-		name := fmt.Sprintf("FindElement_#%d", i+1)
+		name := fmt.Sprintf("FindNode_#%d", i+1)
 		input, err := html.Parse(bytes.NewReader([]byte(testCase.Input)))
 		if err != nil {
 			t.Fatal(name, err)
 		}
 		var output []string
-		if v, ok := FindElement(input, testCase.Filters...); ok {
+		if v, ok := FindNode(input, testCase.Filters...); ok {
 			buffer := new(bytes.Buffer)
 			if err := html.Render(buffer, v); err != nil {
 				t.Fatal(name, i, err)
@@ -280,8 +280,8 @@ func TestFindElement(t *testing.T) {
 		if diff := deep.Equal(
 			len(output),
 			len(
-				filterElements(
-					filterElementsConfig{
+				filterNodes(
+					filterNodesConfig{
 						Node:    input,
 						Filters: testCase.Filters,
 						Find:    true,
@@ -300,8 +300,8 @@ func TestFindElement(t *testing.T) {
 	}
 }
 
-func TestFilterElements_nil(t *testing.T) {
-	if v := FilterElements(nil); v != nil {
+func TestFilterNodes_nil(t *testing.T) {
+	if v := FilterNodes(nil); v != nil {
 		t.Fatal(v)
 	}
 }

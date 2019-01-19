@@ -5,7 +5,7 @@ import (
 )
 
 type (
-	filterElementsConfig struct {
+	filterNodesConfig struct {
 		Node    *html.Node
 		Filters []func(node *html.Node) bool
 		Find    bool
@@ -21,15 +21,15 @@ func copyValidFilters(input []func(node *html.Node) bool) (output []func(node *h
 	return
 }
 
-func filterElements(config filterElementsConfig) []*html.Node {
+func filterNodes(config filterNodesConfig) []*html.Node {
 	config.Filters = copyValidFilters(config.Filters)
 
 	var (
 		result []*html.Node
-		fn     func(config filterElementsConfig)
+		fn     func(config filterNodesConfig)
 	)
 
-	fn = func(config filterElementsConfig) {
+	fn = func(config filterNodesConfig) {
 		if config.Node == nil {
 			return
 		}
@@ -45,7 +45,7 @@ func filterElements(config filterElementsConfig) []*html.Node {
 
 		start := len(result)
 
-		func(config filterElementsConfig) {
+		func(config filterNodesConfig) {
 			var filter func(node *html.Node) bool
 
 			for filter == nil && len(config.Filters) != 0 {
