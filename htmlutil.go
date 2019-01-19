@@ -2,15 +2,48 @@ package htmlutil
 
 import (
 	"bytes"
+	"errors"
 	"golang.org/x/net/html"
+	"io"
+	"strings"
 )
 
-func GetAttribute(namespace string, key string, attributes ...html.Attribute) (html.Attribute, bool) {
-	for _, attribute := range attributes {
-		if attribute.Namespace == namespace && attribute.Key == key {
-			return attribute, true
-		}
+func Parse(r io.Reader, filters ...func(node *html.Node) bool) (Node, error) {
+	node, err := html.Parse(r)
+	if err != nil {
+		return Node{}, err
 	}
+	node, ok := FindElement(node, filters...)
+	if !ok {
+		return Node{}, errors.New("htmlutil.Parse no match")
+	}
+	return Node{
+		Data: node,
+	}, nil
+}
+
+func GetAttribute(namespace string, key string, attributes ...html.Attribute) (html.Attribute, bool) {
+	keyCaseInsensitive := namespace == ``
+	if keyCaseInsensitive {
+		key = strings.ToLower(key)
+	}
+
+	for _, attribute := range attributes {
+		if attribute.Namespace != namespace {
+			continue
+		}
+
+		if keyCaseInsensitive {
+			if strings.ToLower(attribute.Key) != key {
+				continue
+			}
+		} else if attribute.Key != key {
+			continue
+		}
+
+		return attribute, true
+	}
+
 	return html.Attribute{}, false
 }
 
@@ -55,18 +88,4 @@ func EncodeHTML(node *html.Node) string {
 
 func EncodeText(node *html.Node) string {
 	return string(encodeText(node))
-}
-
-func encodeText(node *html.Node) []byte {
-	if node == nil {
-		return nil
-	}
-	if node.Type == html.TextNode {
-		return []byte(node.Data)
-	}
-	var b []byte
-	for node := node.FirstChild; node != nil; node = node.NextSibling {
-		b = append(b, encodeText(node)...)
-	}
-	return b
 }

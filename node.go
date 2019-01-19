@@ -1,27 +1,11 @@
 package htmlutil
 
 import (
-	"errors"
 	"golang.org/x/net/html"
-	"io"
 )
 
 type Node struct {
 	Data *html.Node
-}
-
-func Parse(r io.Reader, filters ...func(node *html.Node) bool) (Node, error) {
-	node, err := html.Parse(r)
-	if err != nil {
-		return Node{}, err
-	}
-	node, ok := FindElement(node, filters...)
-	if !ok {
-		return Node{}, errors.New("htmlutil.Parse no match")
-	}
-	return Node{
-		Data: node,
-	}, nil
 }
 
 func (n Node) FilterElements(filters ...func(node *html.Node) bool) []Node {

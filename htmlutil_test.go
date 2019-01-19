@@ -9,6 +9,26 @@ import (
 	"testing"
 )
 
+func parse(s string, filters ...func(node *html.Node) bool) Node {
+	v, err := Parse(strings.NewReader(s), filters...)
+	if err != nil {
+		panic(err)
+	}
+	return v
+}
+
+func parseElement(s string) Node {
+	return parse(
+		s,
+		func(node *html.Node) bool {
+			return node.Type == html.ElementNode && node.Data == "body"
+		},
+		func(node *html.Node) bool {
+			return node.Type == html.ElementNode
+		},
+	)
+}
+
 func TestFilterElements(t *testing.T) {
 	type TestCase struct {
 		Input   string
@@ -28,10 +48,6 @@ func TestFilterElements(t *testing.T) {
 			Filters: []func(node *html.Node) bool{nil},
 			Output: []string{
 				`<html><head></head><body><img class="iconClass1" src="/images/icon_1.png" alt="Some Alt Text"/></body></html>`,
-				`<html><head></head><body><img class="iconClass1" src="/images/icon_1.png" alt="Some Alt Text"/></body></html>`,
-				`<head></head>`,
-				`<body><img class="iconClass1" src="/images/icon_1.png" alt="Some Alt Text"/></body>`,
-				`<img class="iconClass1" src="/images/icon_1.png" alt="Some Alt Text"/>`,
 			},
 		},
 		{

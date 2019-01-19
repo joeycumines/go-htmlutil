@@ -1,14 +1,29 @@
 package htmlutil
 
-import "golang.org/x/net/html"
+import (
+	"golang.org/x/net/html"
+)
 
-type filterElementsConfig struct {
-	Node    *html.Node
-	Filters []func(node *html.Node) bool
-	Find    bool
+type (
+	filterElementsConfig struct {
+		Node    *html.Node
+		Filters []func(node *html.Node) bool
+		Find    bool
+	}
+)
+
+func copyValidFilters(input []func(node *html.Node) bool) (output []func(node *html.Node) bool) {
+	for _, filter := range input {
+		if filter != nil {
+			output = append(output, filter)
+		}
+	}
+	return
 }
 
 func filterElements(config filterElementsConfig) []*html.Node {
+	config.Filters = copyValidFilters(config.Filters)
+
 	var (
 		result []*html.Node
 		fn     func(config filterElementsConfig)
@@ -42,13 +57,22 @@ func filterElements(config filterElementsConfig) []*html.Node {
 				return
 			}
 
-			fn(config)
+			if len(config.Filters) == 0 {
+				fn(config)
+
+				return
+			}
+
+			for c := config.Node.FirstChild; c != nil; c = c.NextSibling {
+				config.Node = c
+
+				fn(config)
+			}
 		}(config)
 
 		finish := len(result)
 
 		for c := config.Node.FirstChild; c != nil; c = c.NextSibling {
-			config := config
 			config.Node = c
 
 			fn(config)
@@ -71,4 +95,18 @@ func filterElements(config filterElementsConfig) []*html.Node {
 	fn(config)
 
 	return result
+}
+
+func encodeText(node *html.Node) []byte {
+	if node == nil {
+		return nil
+	}
+	if node.Type == html.TextNode {
+		return []byte(node.Data)
+	}
+	var b []byte
+	for node := node.FirstChild; node != nil; node = node.NextSibling {
+		b = append(b, encodeText(node)...)
+	}
+	return b
 }
