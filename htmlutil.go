@@ -24,71 +24,52 @@ import (
 	"strings"
 )
 
-func Parse(r io.Reader, filters ...func(node *html.Node) bool) (Node, error) {
-	node, err := html.Parse(r)
-	if err != nil {
+func Parse(r io.Reader, filters ...func(node Node) bool) (Node, error) {
+	if node, err := html.Parse(r); err != nil {
 		return Node{}, err
-	}
-	node, ok := FindNode(node, filters...)
-	if !ok {
+	} else if node, ok := FindNode(node, filters...); !ok {
 		return Node{}, errors.New("htmlutil.Parse no match")
+	} else {
+		return node, nil
 	}
-	return Node{
-		Data: node,
-	}, nil
 }
 
-func GetAttribute(namespace string, key string, attributes ...html.Attribute) (html.Attribute, bool) {
+func GetAttr(namespace string, key string, attributes ...html.Attribute) (html.Attribute, bool) {
 	keyCaseInsensitive := namespace == ``
 	if keyCaseInsensitive {
 		key = strings.ToLower(key)
 	}
 
-	for _, attribute := range attributes {
-		if attribute.Namespace != namespace {
+	for _, attr := range attributes {
+		if attr.Namespace != namespace {
 			continue
 		}
 
 		if keyCaseInsensitive {
-			if strings.ToLower(attribute.Key) != key {
+			if strings.ToLower(attr.Key) != key {
 				continue
 			}
-		} else if attribute.Key != key {
+		} else if attr.Key != key {
 			continue
 		}
 
-		return attribute, true
+		return attr, true
 	}
 
 	return html.Attribute{}, false
 }
 
-func GetAttributeValue(namespace string, key string, attributes ...html.Attribute) string {
-	result, _ := GetAttribute(namespace, key, attributes...)
+func GetAttrVal(namespace string, key string, attributes ...html.Attribute) string {
+	result, _ := GetAttr(namespace, key, attributes...)
 	return result.Val
 }
 
-func FilterNodes(node *html.Node, filters ...func(node *html.Node) bool) []*html.Node {
-	return filterNodes(
-		filterNodesConfig{
-			Node:    node,
-			Filters: filters,
-		},
-	)
+func FilterNodes(node *html.Node, filters ...func(node Node) bool) []Node {
+	return filterNodes(Node{Data: node}, filters...)
 }
 
-func FindNode(node *html.Node, filters ...func(node *html.Node) bool) (*html.Node, bool) {
-	elements := filterNodes(
-		filterNodesConfig{
-			Node:    node,
-			Filters: filters,
-			Find:    true,
-		},
-	)
-	if len(elements) == 0 {
-		return nil, false
-	}
-	return elements[0], true
+func FindNode(node *html.Node, filters ...func(node Node) bool) (Node, bool) {
+	return findNode(Node{Data: node}, filters...)
 }
 
 func EncodeHTML(node *html.Node) string {

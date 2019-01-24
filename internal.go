@@ -22,13 +22,13 @@ import (
 
 type (
 	filterNodesConfig struct {
-		Node    *html.Node
-		Filters []func(node *html.Node) bool
+		Node    Node
+		Filters []func(node Node) bool
 		Find    bool
 	}
 )
 
-func copyValidFilters(input []func(node *html.Node) bool) (output []func(node *html.Node) bool) {
+func copyValidFilters(input []func(node Node) bool) (output []func(node Node) bool) {
 	for _, filter := range input {
 		if filter != nil {
 			output = append(output, filter)
@@ -37,16 +37,16 @@ func copyValidFilters(input []func(node *html.Node) bool) (output []func(node *h
 	return
 }
 
-func filterNodes(config filterNodesConfig) []*html.Node {
+func filterNodesWithConfig(config filterNodesConfig) []Node {
 	config.Filters = copyValidFilters(config.Filters)
 
 	var (
-		result []*html.Node
+		result []Node
 		fn     func(config filterNodesConfig)
 	)
 
 	fn = func(config filterNodesConfig) {
-		if config.Node == nil {
+		if config.Node.Data == nil {
 			return
 		}
 
@@ -62,7 +62,7 @@ func filterNodes(config filterNodesConfig) []*html.Node {
 		start := len(result)
 
 		func(config filterNodesConfig) {
-			var filter func(node *html.Node) bool
+			var filter func(node Node) bool
 
 			for filter == nil && len(config.Filters) != 0 {
 				filter = config.Filters[0]
@@ -79,7 +79,10 @@ func filterNodes(config filterNodesConfig) []*html.Node {
 				return
 			}
 
-			for c := config.Node.FirstChild; c != nil; c = c.NextSibling {
+			match := config.Node
+			config.Node.Match = &match
+
+			for c := config.Node.FirstChild(); c.Data != nil; c = c.NextSibling() {
 				config.Node = c
 
 				fn(config)
@@ -88,19 +91,19 @@ func filterNodes(config filterNodesConfig) []*html.Node {
 
 		finish := len(result)
 
-		for c := config.Node.FirstChild; c != nil; c = c.NextSibling {
+		for c := config.Node.FirstChild(); c.Data != nil; c = c.NextSibling() {
 			config.Node = c
 
 			fn(config)
 
 			for i := start; i < finish; i++ {
 				for j := finish; j < len(result); j++ {
-					if result[i] != result[j] {
+					if result[i].Data != result[j].Data {
 						continue
 					}
 
 					copy(result[j:], result[j+1:])
-					result[len(result)-1] = nil
+					result[len(result)-1] = Node{}
 					result = result[:len(result)-1]
 					j--
 				}
@@ -111,6 +114,29 @@ func filterNodes(config filterNodesConfig) []*html.Node {
 	fn(config)
 
 	return result
+}
+
+func filterNodes(node Node, filters ...func(node Node) bool) []Node {
+	return filterNodesWithConfig(
+		filterNodesConfig{
+			Node:    node,
+			Filters: filters,
+		},
+	)
+}
+
+func findNode(node Node, filters ...func(node Node) bool) (Node, bool) {
+	elements := filterNodesWithConfig(
+		filterNodesConfig{
+			Node:    node,
+			Filters: filters,
+			Find:    true,
+		},
+	)
+	if len(elements) == 0 {
+		return Node{}, false
+	}
+	return elements[0], true
 }
 
 func encodeText(node *html.Node) []byte {

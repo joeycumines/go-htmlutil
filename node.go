@@ -21,41 +21,35 @@ import (
 )
 
 type Node struct {
+	// Data is the underlying html data for this node
 	Data *html.Node
+	// Depth is the relative depth to the top of the tree (being parsed, filtered, etc)
+	Depth int
+	// Match is the last match (set by filter impl.), and is used to check previous matches for chained filters
+	Match *Node
 }
 
-func (n Node) FilterNodes(filters ...func(node *html.Node) bool) []Node {
-	nodes := FilterNodes(n.Data, filters...)
-	if nodes == nil {
-		return nil
-	}
-	result := make([]Node, len(nodes))
-	for i, node := range nodes {
-		result[i] = Node{
-			Data: node,
-		}
-	}
-	return result
+func (n Node) FilterNodes(filters ...func(node Node) bool) []Node {
+	return filterNodes(n, filters...)
 }
 
-func (n Node) FindNode(filters ...func(node *html.Node) bool) (Node, bool) {
-	node, ok := FindNode(n.Data, filters...)
-	return Node{Data: node}, ok
+func (n Node) FindNode(filters ...func(node Node) bool) (Node, bool) {
+	return findNode(n, filters...)
 }
 
-func (n Node) Attributes() []html.Attribute {
+func (n Node) Attr() []html.Attribute {
 	if n.Data == nil {
 		return nil
 	}
 	return n.Data.Attr
 }
 
-func (n Node) GetAttribute(namespace string, key string) (html.Attribute, bool) {
-	return GetAttribute(namespace, key, n.Attributes()...)
+func (n Node) GetAttr(namespace string, key string) (html.Attribute, bool) {
+	return GetAttr(namespace, key, n.Attr()...)
 }
 
-func (n Node) GetAttributeValue(namespace string, key string, attributes ...html.Attribute) string {
-	return GetAttributeValue(namespace, key, n.Attributes()...)
+func (n Node) GetAttrVal(namespace string, key string, attributes ...html.Attribute) string {
+	return GetAttrVal(namespace, key, n.Attr()...)
 }
 
 func (n Node) EncodeHTML() string {
@@ -74,15 +68,15 @@ func (n Node) Children() (children []Node) {
 	if n.Data == nil {
 		return
 	}
-	for c := n.Data.FirstChild; c != nil; c = c.NextSibling {
-		children = append(children, Node{Data: c})
+	for child := n.FirstChild(); child.Data != nil; child = child.NextSibling() {
+		children = append(children, child)
 	}
 	return
 }
 
 func (n Node) InnerHTML() string {
 	var b []byte
-	for _, child := range n.Children() {
+	for child := n.FirstChild(); child.Data != nil; child = child.NextSibling() {
 		b = append(b, []byte(child.EncodeHTML())...)
 	}
 	return string(b)
@@ -90,8 +84,68 @@ func (n Node) InnerHTML() string {
 
 func (n Node) InnerText() string {
 	var b []byte
-	for _, child := range n.Children() {
+	for child := n.FirstChild(); child.Data != nil; child = child.NextSibling() {
 		b = append(b, []byte(child.EncodeText())...)
 	}
 	return string(b)
+}
+
+func (n Node) Parent() Node {
+	if n.Data != nil {
+		n.Data = n.Data.Parent
+	}
+	n.Depth--
+	return n
+}
+
+func (n Node) FirstChild() Node {
+	if n.Data != nil {
+		n.Data = n.Data.FirstChild
+	}
+	n.Depth++
+	return n
+}
+
+func (n Node) LastChild() Node {
+	if n.Data != nil {
+		n.Data = n.Data.LastChild
+	}
+	n.Depth++
+	return n
+}
+
+func (n Node) PrevSibling() Node {
+	if n.Data != nil {
+		n.Data = n.Data.PrevSibling
+	}
+	return n
+}
+
+func (n Node) NextSibling() Node {
+	if n.Data != nil {
+		n.Data = n.Data.NextSibling
+	}
+	return n
+}
+
+func (n Node) MatchDepth() int {
+	d := n.Depth
+	if n.Match != nil {
+		d -= n.Match.Depth
+	}
+	return d
+}
+
+func (n Node) Type() html.NodeType {
+	if n.Data != nil {
+		return n.Data.Type
+	}
+	return html.ErrorNode
+}
+
+func (n Node) Tag() string {
+	if n.Type() == html.ElementNode {
+		return n.Data.Data
+	}
+	return ""
 }
