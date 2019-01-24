@@ -17,7 +17,9 @@
 package htmlutil
 
 import (
+	"bytes"
 	"golang.org/x/net/html"
+	"strings"
 )
 
 type (
@@ -139,7 +141,12 @@ func findNode(node Node, filters ...func(node Node) bool) (Node, bool) {
 	return elements[0], true
 }
 
-func encodeText(node *html.Node) []byte {
+func getNode(node Node, filters ...func(node Node) bool) Node {
+	result, _ := findNode(node, filters...)
+	return result
+}
+
+func encodeTextBytes(node *html.Node) []byte {
 	if node == nil {
 		return nil
 	}
@@ -148,7 +155,64 @@ func encodeText(node *html.Node) []byte {
 	}
 	var b []byte
 	for node := node.FirstChild; node != nil; node = node.NextSibling {
-		b = append(b, encodeText(node)...)
+		b = append(b, encodeTextBytes(node)...)
 	}
 	return b
+}
+
+func encodeText(node *html.Node) string {
+	return string(encodeTextBytes(node))
+}
+
+func encodeHTML(node *html.Node) string {
+	if node == nil {
+		return ""
+	}
+	buffer := new(bytes.Buffer)
+	if err := html.Render(buffer, node); err != nil {
+		panic(err)
+	}
+	return buffer.String()
+}
+
+func filterNodesRaw(node *html.Node, filters ...func(node Node) bool) []Node {
+	return filterNodes(Node{Data: node}, filters...)
+}
+
+func findNodeRaw(node *html.Node, filters ...func(node Node) bool) (Node, bool) {
+	return findNode(Node{Data: node}, filters...)
+}
+
+func getNodeRaw(node *html.Node, filters ...func(node Node) bool) Node {
+	return getNode(Node{Data: node}, filters...)
+}
+
+func getAttr(namespace string, key string, attributes ...html.Attribute) (html.Attribute, bool) {
+	keyCaseInsensitive := namespace == ``
+	if keyCaseInsensitive {
+		key = strings.ToLower(key)
+	}
+
+	for _, attr := range attributes {
+		if attr.Namespace != namespace {
+			continue
+		}
+
+		if keyCaseInsensitive {
+			if strings.ToLower(attr.Key) != key {
+				continue
+			}
+		} else if attr.Key != key {
+			continue
+		}
+
+		return attr, true
+	}
+
+	return html.Attribute{}, false
+}
+
+func getAttrVal(namespace string, key string, attributes ...html.Attribute) string {
+	result, _ := getAttr(namespace, key, attributes...)
+	return result.Val
 }
