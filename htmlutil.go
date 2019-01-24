@@ -68,7 +68,7 @@ func (n Node) GetAttr(namespace string, key string) (html.Attribute, bool) {
 	return getAttr(namespace, key, n.Attr()...)
 }
 
-func (n Node) GetAttrVal(namespace string, key string, attributes ...html.Attribute) string {
+func (n Node) GetAttrVal(namespace string, key string) string {
 	return getAttrVal(namespace, key, n.Attr()...)
 }
 
