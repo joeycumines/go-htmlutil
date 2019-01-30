@@ -52,6 +52,11 @@ func filterNodesWithConfig(config filterNodesConfig) []Node {
 			return
 		}
 
+		if config.Node.Match == nil {
+			match := config.Node
+			config.Node.Match = &match
+		}
+
 		if config.Find && len(result) != 0 {
 			return
 		}

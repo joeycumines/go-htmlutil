@@ -494,7 +494,11 @@ func TestNode_FilterNodes_depth(t *testing.T) {
 		if v := v.MatchDepth(); v != 3 {
 			t.Error(v)
 		}
-		if v := v.Match; v != nil {
+		if v := v.Match; v == nil || v.Data == nil {
+			t.Error("expected initial matches to always be set for nodes with data")
+		} else if v.Data.Type != html.DocumentNode {
+			t.Fatal(v.Data.Type)
+		} else if v := v.Match; v != nil {
 			t.Error(v)
 		}
 		if a := nodes[0].Parent().Parent(); a.Data == nil || a.Match != v || a.Match == v.Match {
@@ -613,5 +617,12 @@ func TestNode_GetNode_success(t *testing.T) {
 			},
 		).EncodeHTML(); v != `<b>a</b>` {
 		t.Error(v)
+	}
+}
+
+func TestNode_FindNode_nilNoMatchSet(t *testing.T) {
+	n, ok := (Node{}).FindNode()
+	if ok || n.Match != nil {
+		t.Fatal(n, ok)
 	}
 }
