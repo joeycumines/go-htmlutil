@@ -42,6 +42,11 @@ func copyValidFilters(input []func(node Node) bool) (output []func(node Node) bo
 func filterNodesWithConfig(config filterNodesConfig) []Node {
 	config.Filters = copyValidFilters(config.Filters)
 
+	if config.Node.Data != nil {
+		match := config.Node
+		config.Node.Match = &match
+	}
+
 	var (
 		result []Node
 		fn     func(config filterNodesConfig)
@@ -50,11 +55,6 @@ func filterNodesWithConfig(config filterNodesConfig) []Node {
 	fn = func(config filterNodesConfig) {
 		if config.Node.Data == nil {
 			return
-		}
-
-		if config.Node.Match == nil {
-			match := config.Node
-			config.Node.Match = &match
 		}
 
 		if config.Find && len(result) != 0 {
