@@ -580,12 +580,85 @@ func TestNode_FindNode_success(t *testing.T) {
 	if n := n.Parent(); n.Data == nil {
 		t.Fatal(n)
 	} else {
+		// unfiltered values
 		if v := n.SiblingIndex(); v != 1 {
 			t.Error(v)
 		}
 		if v := n.SiblingLength(); v != 3 {
 			t.Error(v)
 		}
+
+		// filtered values - use find on each node
+		// - match on the current case (nested)
+		if v := n.SiblingIndex(
+			func(node Node) bool {
+				return node.GetAttrVal(``, `id`) == "search"
+			},
+		); v != 0 {
+			t.Error(v)
+		}
+		if v := n.SiblingLength(
+			func(node Node) bool {
+				return node.GetAttrVal(``, `id`) == "search"
+			},
+		); v != 1 {
+			t.Error(v)
+		}
+
+		// - match on this and the previous sibling
+		if v := n.SiblingIndex(
+			func(node Node) bool {
+				return node.Tag() == `b`
+			},
+		); v != 1 {
+			t.Error(v)
+		}
+		if v := n.SiblingLength(
+			func(node Node) bool {
+				return node.Tag() == `b`
+			},
+		); v != 2 {
+			t.Error(v)
+		}
+
+		// - no match
+		if v := n.SiblingIndex(
+			func(node Node) bool {
+				return false
+			},
+		); v != 0 {
+			t.Error(v)
+		}
+		if v := n.SiblingLength(
+			func(node Node) bool {
+				return false
+			},
+		); v != 0 {
+			t.Error(v)
+		}
+
+		// - nested match
+		if v := n.SiblingIndex(
+			func(node Node) bool {
+				return node.Tag() == `b`
+			},
+			func(node Node) bool {
+				return node.Tag() == `c`
+			},
+		); v != 0 {
+			t.Error(v)
+		}
+		if v := n.SiblingLength(
+			func(node Node) bool {
+				return node.Tag() == `b`
+			},
+			func(node Node) bool {
+				return node.Tag() == `c`
+			},
+		); v != 1 {
+			t.Error(v)
+		}
+
 		if n := n.PrevSibling(); n.Data == nil {
 			t.Fatal(n)
 		} else {
@@ -609,12 +682,69 @@ func TestNode_FindNode_success(t *testing.T) {
 		if n := n.NextSibling(); n.Data == nil {
 			t.Fatal(n)
 		} else {
+			// unfiltered values
 			if v := n.SiblingIndex(); v != 2 {
 				t.Error(v)
 			}
 			if v := n.SiblingLength(); v != 3 {
 				t.Error(v)
 			}
+
+			// filtered values - use find on each node
+			// - match but out of bounds because the current node isn't a match
+			if v := n.SiblingIndex(
+				func(node Node) bool {
+					return node.GetAttrVal(``, `id`) == "search"
+				},
+			); v != 1 {
+				t.Error(v)
+			}
+			if v := n.SiblingLength(
+				func(node Node) bool {
+					return node.GetAttrVal(``, `id`) == "search"
+				},
+			); v != 1 {
+				t.Error(v)
+			}
+
+			// - again miss-match example
+			if v := n.SiblingIndex(
+				func(node Node) bool {
+					return node.Tag() == `b`
+				},
+			); v != 2 {
+				t.Error(v)
+			}
+			if v := n.SiblingLength(
+				func(node Node) bool {
+					return node.Tag() == `b`
+				},
+			); v != 2 {
+				t.Error(v)
+			}
+
+			// - nested mis-match example
+			if v := n.SiblingIndex(
+				func(node Node) bool {
+					return node.Tag() == `b`
+				},
+				func(node Node) bool {
+					return node.Tag() == `c`
+				},
+			); v != 1 {
+				t.Error(v)
+			}
+			if v := n.SiblingLength(
+				func(node Node) bool {
+					return node.Tag() == `b`
+				},
+				func(node Node) bool {
+					return node.Tag() == `c`
+				},
+			); v != 1 {
+				t.Error(v)
+			}
+
 			if n := n.FirstChild(); n.Data == nil {
 				t.Fatal(n)
 			} else {

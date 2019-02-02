@@ -222,25 +222,31 @@ func getAttrVal(namespace string, key string, attributes ...html.Attribute) stri
 	return result.Val
 }
 
-func siblingIndex(node *html.Node) (v int) {
+func siblingIndex(node *html.Node, filters ...func(node Node) bool) (v int) {
 	if node == nil {
 		return
 	}
 	for node := node.PrevSibling; node != nil; node = node.PrevSibling {
-		v++
+		if _, ok := findNodeRaw(node, filters...); ok {
+			v++
+		}
 	}
 	return
 }
 
-func siblingLength(node *html.Node) (v int) {
+func siblingLength(node *html.Node, filters ...func(node Node) bool) (v int) {
 	if node == nil {
 		return
 	}
 	for node := node.PrevSibling; node != nil; node = node.PrevSibling {
-		v++
+		if _, ok := findNodeRaw(node, filters...); ok {
+			v++
+		}
 	}
 	for node := node; node != nil; node = node.NextSibling {
-		v++
+		if _, ok := findNodeRaw(node, filters...); ok {
+			v++
+		}
 	}
 	return
 }

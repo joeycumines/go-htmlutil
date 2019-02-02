@@ -170,10 +170,10 @@ func (n Node) Tag() string {
 	return ""
 }
 
-func (n Node) SiblingIndex() int {
-	return siblingIndex(n.Data)
+func (n Node) SiblingIndex(filters ...func(node Node) bool) int {
+	return siblingIndex(n.Data, filters...)
 }
 
-func (n Node) SiblingLength() int {
-	return siblingLength(n.Data)
+func (n Node) SiblingLength(filters ...func(node Node) bool) int {
+	return siblingLength(n.Data, filters...)
 }
