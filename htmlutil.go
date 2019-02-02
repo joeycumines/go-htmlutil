@@ -38,7 +38,7 @@ type Node struct {
 func Parse(r io.Reader, filters ...func(node Node) bool) (Node, error) {
 	if node, err := html.Parse(r); err != nil {
 		return Node{}, err
-	} else if node, ok := findNodeRaw(node, filters...); !ok {
+	} else if node, ok := findNode(Node{Data: node}, filters...); !ok {
 		return Node{}, errors.New("htmlutil.Parse no match")
 	} else {
 		return node, nil
@@ -217,10 +217,13 @@ func (n Node) Tag() string {
 	return ""
 }
 
+// SiblingIndex returns the total number of previous siblings matching any filters
 func (n Node) SiblingIndex(filters ...func(node Node) bool) int {
-	return siblingIndex(n.Data, filters...)
+	return siblingIndex(n, filters...)
 }
 
+// SiblingLength returns the total number of siblings matching any filters incremented by one for the current node,
+// or returns 0 if the receiver has nil data (is empty)
 func (n Node) SiblingLength(filters ...func(node Node) bool) int {
-	return siblingLength(n.Data, filters...)
+	return siblingLength(n, filters...)
 }

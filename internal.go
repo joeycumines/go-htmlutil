@@ -180,18 +180,6 @@ func encodeHTML(node *html.Node) string {
 	return buffer.String()
 }
 
-func filterNodesRaw(node *html.Node, filters ...func(node Node) bool) []Node {
-	return filterNodes(Node{Data: node}, filters...)
-}
-
-func findNodeRaw(node *html.Node, filters ...func(node Node) bool) (Node, bool) {
-	return findNode(Node{Data: node}, filters...)
-}
-
-func getNodeRaw(node *html.Node, filters ...func(node Node) bool) Node {
-	return getNode(Node{Data: node}, filters...)
-}
-
 func getAttr(namespace string, key string, attributes ...html.Attribute) (html.Attribute, bool) {
 	keyCaseInsensitive := namespace == ``
 	if keyCaseInsensitive {
@@ -222,31 +210,20 @@ func getAttrVal(namespace string, key string, attributes ...html.Attribute) stri
 	return result.Val
 }
 
-func siblingIndex(node *html.Node, filters ...func(node Node) bool) (v int) {
-	if node == nil {
-		return
-	}
-	for node := node.PrevSibling; node != nil; node = node.PrevSibling {
-		if _, ok := findNodeRaw(node, filters...); ok {
-			v++
-		}
+func siblingIndex(node Node, filters ...func(node Node) bool) (v int) {
+	// results the count of previous siblings matching any filters
+	for node = node.PrevSibling(filters...); node.Data != nil; node = node.PrevSibling(filters...) {
+		v++
 	}
 	return
 }
 
-func siblingLength(node *html.Node, filters ...func(node Node) bool) (v int) {
-	if node == nil {
-		return
-	}
-	for node := node.PrevSibling; node != nil; node = node.PrevSibling {
-		if _, ok := findNodeRaw(node, filters...); ok {
-			v++
-		}
-	}
-	for node := node; node != nil; node = node.NextSibling {
-		if _, ok := findNodeRaw(node, filters...); ok {
-			v++
-		}
+func siblingLength(node Node, filters ...func(node Node) bool) (v int) {
+	// count previous siblings matching filters
+	v = siblingIndex(node, filters...)
+	// count this node (if not empty) and filtered next siblings
+	for node := node; node.Data != nil; node = node.NextSibling(filters...) {
+		v++
 	}
 	return
 }

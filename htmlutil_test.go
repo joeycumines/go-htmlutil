@@ -660,7 +660,23 @@ func TestNode_FindNode_success(t *testing.T) {
 			t.Error(v)
 		}
 
-		// - no match
+		// - match on the last sibling, but includes this node as well
+		if v := n.SiblingIndex(
+			func(node Node) bool {
+				return node.Tag() == `d`
+			},
+		); v != 0 {
+			t.Error(v)
+		}
+		if v := n.SiblingLength(
+			func(node Node) bool {
+				return node.Tag() == `d`
+			},
+		); v != 2 {
+			t.Error(v)
+		}
+
+		// - no match, but the current node gets included in the length
 		if v := n.SiblingIndex(
 			func(node Node) bool {
 				return false
@@ -672,7 +688,7 @@ func TestNode_FindNode_success(t *testing.T) {
 			func(node Node) bool {
 				return false
 			},
-		); v != 0 {
+		); v != 1 {
 			t.Error(v)
 		}
 
@@ -730,7 +746,7 @@ func TestNode_FindNode_success(t *testing.T) {
 			}
 
 			// filtered values - use find on each node
-			// - match but out of bounds because the current node isn't a match
+			// - match + current node
 			if v := n.SiblingIndex(
 				func(node Node) bool {
 					return node.GetAttrVal(``, `id`) == "search"
@@ -742,7 +758,7 @@ func TestNode_FindNode_success(t *testing.T) {
 				func(node Node) bool {
 					return node.GetAttrVal(``, `id`) == "search"
 				},
-			); v != 1 {
+			); v != 2 {
 				t.Error(v)
 			}
 
@@ -758,7 +774,7 @@ func TestNode_FindNode_success(t *testing.T) {
 				func(node Node) bool {
 					return node.Tag() == `b`
 				},
-			); v != 2 {
+			); v != 3 {
 				t.Error(v)
 			}
 
@@ -780,7 +796,7 @@ func TestNode_FindNode_success(t *testing.T) {
 				func(node Node) bool {
 					return node.Tag() == `c`
 				},
-			); v != 1 {
+			); v != 2 {
 				t.Error(v)
 			}
 
