@@ -221,3 +221,26 @@ func getAttrVal(namespace string, key string, attributes ...html.Attribute) stri
 	result, _ := getAttr(namespace, key, attributes...)
 	return result.Val
 }
+
+func siblingIndex(node *html.Node) (v int) {
+	if node == nil {
+		return
+	}
+	for node := node.PrevSibling; node != nil; node = node.PrevSibling {
+		v++
+	}
+	return
+}
+
+func siblingLength(node *html.Node) (v int) {
+	if node == nil {
+		return
+	}
+	for node := node.PrevSibling; node != nil; node = node.PrevSibling {
+		v++
+	}
+	for node := node; node != nil; node = node.NextSibling {
+		v++
+	}
+	return
+}

@@ -560,7 +560,7 @@ func TestNode_Attr_nil(t *testing.T) {
 }
 
 func TestNode_FindNode_success(t *testing.T) {
-	n, ok := parse(`<a><b></b><b><c id="search"></c></b></a>`).
+	n, ok := parse(`<a><b></b><b><c id="search"></c></b><d><e></e><f><g></g></f></d></a>`).
 		FindNode(
 			func(node Node) bool {
 				return node.GetAttrVal(``, `id`) == "search"
@@ -568,6 +568,84 @@ func TestNode_FindNode_success(t *testing.T) {
 		)
 	if !ok || n.String() != `<c id="search"></c>` {
 		t.Fatal(n, ok)
+	}
+
+	// sibling index and sibling length tests because lazy
+	if v := n.SiblingIndex(); v != 0 {
+		t.Error(v)
+	}
+	if v := n.SiblingLength(); v != 1 {
+		t.Error(v)
+	}
+	if n := n.Parent(); n.Data == nil {
+		t.Fatal(n)
+	} else {
+		if v := n.SiblingIndex(); v != 1 {
+			t.Error(v)
+		}
+		if v := n.SiblingLength(); v != 3 {
+			t.Error(v)
+		}
+		if n := n.PrevSibling(); n.Data == nil {
+			t.Fatal(n)
+		} else {
+			if v := n.SiblingIndex(); v != 0 {
+				t.Error(v)
+			}
+			if v := n.SiblingLength(); v != 3 {
+				t.Error(v)
+			}
+			if n := n.PrevSibling(); n.Data != nil {
+				t.Fatal(n)
+			} else {
+				if v := n.SiblingIndex(); v != 0 {
+					t.Error(v)
+				}
+				if v := n.SiblingLength(); v != 0 {
+					t.Error(v)
+				}
+			}
+		}
+		if n := n.NextSibling(); n.Data == nil {
+			t.Fatal(n)
+		} else {
+			if v := n.SiblingIndex(); v != 2 {
+				t.Error(v)
+			}
+			if v := n.SiblingLength(); v != 3 {
+				t.Error(v)
+			}
+			if n := n.FirstChild(); n.Data == nil {
+				t.Fatal(n)
+			} else {
+				if v := n.SiblingIndex(); v != 0 {
+					t.Error(v)
+				}
+				if v := n.SiblingLength(); v != 2 {
+					t.Error(v)
+				}
+			}
+			if n := n.NextSibling(); n.Data != nil {
+				t.Fatal(n)
+			} else {
+				if v := n.SiblingIndex(); v != 0 {
+					t.Error(v)
+				}
+				if v := n.SiblingLength(); v != 0 {
+					t.Error(v)
+				}
+			}
+		}
+		if n := n.Parent(); n.Data == nil {
+			t.Fatal(n)
+		} else {
+			if v := n.SiblingIndex(); v != 0 {
+				t.Error(v)
+			}
+			if v := n.SiblingLength(); v != 1 {
+				t.Error(v)
+			}
+		}
 	}
 }
 

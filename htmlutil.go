@@ -169,3 +169,11 @@ func (n Node) Tag() string {
 	}
 	return ""
 }
+
+func (n Node) SiblingIndex() int {
+	return siblingIndex(n.Data)
+}
+
+func (n Node) SiblingLength() int {
+	return siblingLength(n.Data)
+}
