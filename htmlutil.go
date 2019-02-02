@@ -84,66 +84,113 @@ func (n Node) String() string {
 	return n.EncodeHTML()
 }
 
-func (n Node) Children() (children []Node) {
-	if n.Data == nil {
-		return
+func (n Node) Range(fn func(i int, node Node) bool, filters ...func(node Node) bool) {
+	if fn == nil {
+		panic(errors.New("htmlutil.Node.Range nil fn"))
 	}
-	for child := n.FirstChild(); child.Data != nil; child = child.NextSibling() {
-		children = append(children, child)
+	i := 0
+	for node := n.FirstChild(filters...); node.Data != nil; node = node.NextSibling(filters...) {
+		if !fn(i, node) {
+			break
+		}
+		i++
 	}
+}
+
+func (n Node) Children(filters ...func(node Node) bool) (children []Node) {
+	n.Range(
+		func(i int, node Node) bool {
+			children = append(children, node)
+			return true
+		},
+		filters...,
+	)
 	return
 }
 
-func (n Node) InnerHTML() string {
+func (n Node) InnerHTML(filters ...func(node Node) bool) string {
 	var b []byte
-	for child := n.FirstChild(); child.Data != nil; child = child.NextSibling() {
-		b = append(b, []byte(child.EncodeHTML())...)
-	}
+	n.Range(
+		func(i int, node Node) bool {
+			b = append(b, []byte(node.EncodeHTML())...)
+			return true
+		},
+		filters...,
+	)
 	return string(b)
 }
 
-func (n Node) InnerText() string {
+func (n Node) InnerText(filters ...func(node Node) bool) string {
 	var b []byte
-	for child := n.FirstChild(); child.Data != nil; child = child.NextSibling() {
-		b = append(b, []byte(child.EncodeText())...)
-	}
+	n.Range(
+		func(i int, node Node) bool {
+			b = append(b, []byte(node.EncodeText())...)
+			return true
+		},
+		filters...,
+	)
 	return string(b)
 }
 
-func (n Node) Parent() Node {
+func (n Node) Parent(filters ...func(node Node) bool) Node {
+	n.Depth--
 	if n.Data != nil {
 		n.Data = n.Data.Parent
 	}
-	n.Depth--
+	if n.Data != nil {
+		if _, ok := n.FindNode(filters...); !ok {
+			return n.Parent(filters...)
+		}
+	}
 	return n
 }
 
-func (n Node) FirstChild() Node {
+func (n Node) FirstChild(filters ...func(node Node) bool) Node {
+	n.Depth++
 	if n.Data != nil {
 		n.Data = n.Data.FirstChild
 	}
-	n.Depth++
+	if n.Data != nil {
+		if _, ok := n.FindNode(filters...); !ok {
+			return n.NextSibling(filters...)
+		}
+	}
 	return n
 }
 
-func (n Node) LastChild() Node {
+func (n Node) LastChild(filters ...func(node Node) bool) Node {
+	n.Depth++
 	if n.Data != nil {
 		n.Data = n.Data.LastChild
 	}
-	n.Depth++
-	return n
-}
-
-func (n Node) PrevSibling() Node {
 	if n.Data != nil {
-		n.Data = n.Data.PrevSibling
+		if _, ok := n.FindNode(filters...); !ok {
+			return n.PrevSibling(filters...)
+		}
 	}
 	return n
 }
 
-func (n Node) NextSibling() Node {
+func (n Node) PrevSibling(filters ...func(node Node) bool) Node {
+	if n.Data != nil {
+		n.Data = n.Data.PrevSibling
+	}
+	if n.Data != nil {
+		if _, ok := n.FindNode(filters...); !ok {
+			return n.PrevSibling(filters...)
+		}
+	}
+	return n
+}
+
+func (n Node) NextSibling(filters ...func(node Node) bool) Node {
 	if n.Data != nil {
 		n.Data = n.Data.NextSibling
+	}
+	if n.Data != nil {
+		if _, ok := n.FindNode(filters...); !ok {
+			return n.NextSibling(filters...)
+		}
 	}
 	return n
 }

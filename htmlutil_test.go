@@ -570,6 +570,45 @@ func TestNode_FindNode_success(t *testing.T) {
 		t.Fatal(n, ok)
 	}
 
+	// parent filter test because lazy
+	if n.Depth != 5 {
+		t.Error(n.Depth)
+	} else {
+		if v := n.Parent(); v.Data == nil || v.Depth != 4 || v.EncodeHTML() != `<b><c id="search"></c></b>` {
+			t.Error(v.Data, v.Depth, v.EncodeHTML())
+		}
+		if v := n.Parent(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); v.Data == nil || v.Depth != 4 || v.EncodeHTML() != `<b><c id="search"></c></b>` {
+			t.Error(v.Data, v.Depth, v.EncodeHTML())
+		}
+		if v := n.Parent(
+			func(node Node) bool {
+				return true
+			},
+		); v.Data == nil || v.Depth != 4 || v.EncodeHTML() != `<b><c id="search"></c></b>` {
+			t.Error(v.Data, v.Depth, v.EncodeHTML())
+		}
+		if v := n.Parent(
+			nil,
+			nil,
+			nil,
+			func(node Node) bool {
+				return node.Tag() == `b`
+			},
+		); v.Data == nil || v.Depth != 4 || v.EncodeHTML() != `<b><c id="search"></c></b>` {
+			t.Error(v.Data, v.Depth, v.EncodeHTML())
+		}
+		if v := n.Parent(
+			nil,
+			nil,
+			nil,
+			func(node Node) bool {
+				return node.Tag() == `body`
+			},
+		); v.Data == nil || v.Depth != 2 || v.EncodeHTML() != `<body><a><b></b><b><c id="search"></c></b><d><e></e><f><g></g></f></d></a></body>` {
+			t.Error(v.Data, v.Depth, v.EncodeHTML())
+		}
+	}
+
 	// sibling index and sibling length tests because lazy
 	if v := n.SiblingIndex(); v != 0 {
 		t.Error(v)
@@ -833,4 +872,235 @@ func TestNode_FindNode_nilNoMatchSet(t *testing.T) {
 	if ok || n.Match != nil {
 		t.Fatal(n, ok)
 	}
+}
+
+func TestNode_Range_panic(t *testing.T) {
+	defer func() {
+		if r := fmt.Sprint(recover()); r != "htmlutil.Node.Range nil fn" {
+			t.Fatal(r)
+		}
+	}()
+	var n Node
+	n.Range(nil)
+}
+
+func TestNode_Range_bailOutTrue(t *testing.T) {
+	var (
+		node   = parseElement(`<div><a>1</a><b>2</b><c>3</c></div>`)
+		index  int
+		values []string
+	)
+	node.Range(
+		func(i int, node Node) bool {
+			values = append(values, node.EncodeHTML())
+			if i != index {
+				t.Fatal(i, index)
+			}
+			index++
+			return index != 2
+		},
+	)
+	if diff := deep.Equal(
+		index,
+		2,
+	); diff != nil {
+		t.Error(strings.Join(append([]string{"index diff:"}, diff...), "    \n"))
+	}
+	if diff := deep.Equal(
+		values,
+		[]string{
+			`<a>1</a>`,
+			`<b>2</b>`,
+		},
+	); diff != nil {
+		t.Error(strings.Join(append([]string{"values diff:"}, diff...), "    \n"))
+	}
+}
+
+func TestNode_Range_bailOutFalse(t *testing.T) {
+	var (
+		node   = parseElement(`<div><a>1</a><b>2</b><c>3</c></div>`)
+		index  int
+		values []string
+	)
+	node.Range(
+		func(i int, node Node) bool {
+			values = append(values, node.EncodeHTML())
+			if i != index {
+				t.Fatal(i, index)
+			}
+			index++
+			return true
+		},
+	)
+	if diff := deep.Equal(
+		index,
+		3,
+	); diff != nil {
+		t.Error(strings.Join(append([]string{"index diff:"}, diff...), "    \n"))
+	}
+	if diff := deep.Equal(
+		values,
+		[]string{
+			`<a>1</a>`,
+			`<b>2</b>`,
+			`<c>3</c>`,
+		},
+	); diff != nil {
+		t.Error(strings.Join(append([]string{"values diff:"}, diff...), "    \n"))
+	}
+}
+
+func TestNode_Parent_none(t *testing.T) {
+	node := parse(`<a></a>`)
+	if node.Depth != 0 {
+		t.Error(node.Depth)
+	}
+	if node := node.Parent(); node.Data != nil || node.Depth != -1 {
+		t.Error(node.Data, node.Depth)
+	}
+}
+
+func TestNode_FirstChild_none(t *testing.T) {
+	node := parseElement(`<a></a>`)
+	if node.Depth != 3 {
+		t.Error(node.Depth)
+	}
+	if node := node.FirstChild(); node.Data != nil || node.Depth != 4 {
+		t.Error(node.Data, node.Depth)
+	}
+}
+
+func TestNode_LastChild_none(t *testing.T) {
+	node := parseElement(`<a></a>`)
+	if node.Depth != 3 {
+		t.Error(node.Depth)
+	}
+	if node := node.LastChild(); node.Data != nil || node.Depth != 4 {
+		t.Error(node.Data, node.Depth)
+	}
+}
+
+func TestNode_NextSibling_none(t *testing.T) {
+	node := parseElement(`<a></a>`)
+	if node.Depth != 3 {
+		t.Error(node.Depth)
+	}
+	if node := node.NextSibling(); node.Data != nil || node.Depth != 3 {
+		t.Error(node.Data, node.Depth)
+	}
+}
+
+func TestNode_PrevSibling_none(t *testing.T) {
+	node := parseElement(`<a></a>`)
+	if node.Depth != 3 {
+		t.Error(node.Depth)
+	}
+	if node := node.PrevSibling(); node.Data != nil || node.Depth != 3 {
+		t.Error(node.Data, node.Depth)
+	}
+}
+
+func TestNode_Range_filter(t *testing.T) {
+	var (
+		node   = parseElement(` <div>  <no>0</no><no>0</no> <a>1</a>   <b>2</b> <no>0</no><no>0</no>   <c>3</c>  <no>0</no><no>0</no>  </div>    `)
+		index  int
+		values []string
+		count  int
+		filter = func(node Node) bool {
+			count++
+			return node.MatchDepth() == 0 &&
+				node.Type() == html.ElementNode &&
+				node.Tag() != `no`
+		}
+	)
+	node.Range(
+		func(i int, node Node) bool {
+			values = append(values, node.EncodeHTML())
+			if i != index {
+				t.Fatal(i, index)
+			}
+			index++
+			return true
+		},
+		filter,
+	)
+	if diff := deep.Equal(
+		index,
+		3,
+	); diff != nil {
+		t.Error(strings.Join(append([]string{"index diff:"}, diff...), "    \n"))
+	}
+	if diff := deep.Equal(
+		values,
+		[]string{
+			`<a>1</a>`,
+			`<b>2</b>`,
+			`<c>3</c>`,
+		},
+	); diff != nil {
+		t.Error(strings.Join(append([]string{"values diff:"}, diff...), "    \n"))
+	}
+	if diff := deep.Equal(
+		count,
+		22,
+	); diff != nil {
+		t.Error(strings.Join(append([]string{"count diff:"}, diff...), "    \n"))
+	}
+
+	// children filter
+	func() {
+		var children []string
+		for _, node := range node.Children(filter) {
+			children = append(children, node.EncodeHTML())
+		}
+		if len(children) != 3 {
+			t.Error(len(children))
+		}
+		if diff := deep.Equal(
+			children,
+			values,
+		); diff != nil {
+			t.Error(strings.Join(append([]string{"children diff:"}, diff...), "    \n"))
+		}
+	}()
+
+	// inner html filter
+	func() {
+		value := node.InnerHTML(filter)
+		if diff := deep.Equal(
+			value,
+			strings.Join(values, ``),
+		); diff != nil {
+			t.Error(strings.Join(append([]string{"inner html diff:"}, diff...), "    \n"))
+		}
+	}()
+
+	// inner text filter
+	func() {
+		value := node.InnerText(filter)
+		if diff := deep.Equal(
+			value,
+			`123`,
+		); diff != nil {
+			t.Error(strings.Join(append([]string{"inner text diff:"}, diff...), "    \n"))
+		}
+	}()
+
+	// iterate reverse filter
+	func() {
+		var children []string
+		for node := node.LastChild(filter); node.Data != nil; node = node.PrevSibling(filter) {
+			children = append([]string{node.EncodeHTML()}, children...)
+		}
+		if len(children) != 3 {
+			t.Error(len(children))
+		}
+		if diff := deep.Equal(
+			children,
+			values,
+		); diff != nil {
+			t.Error(strings.Join(append([]string{"children built from reverse diff:"}, diff...), "    \n"))
+		}
+	}()
 }
