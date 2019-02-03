@@ -35,6 +35,8 @@ type Node struct {
 	Match *Node
 }
 
+// Parse first performs html.Parse, parsing through any errors, before applying a find to the resulting Node (wrapped
+// like `Node{Data: node}`), returning the first matching Node, or an error, if no matches were found
 func Parse(r io.Reader, filters ...func(node Node) bool) (Node, error) {
 	if node, err := html.Parse(r); err != nil {
 		return Node{}, err

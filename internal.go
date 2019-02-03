@@ -225,7 +225,7 @@ func siblingLength(node Node, filters ...func(node Node) bool) (v int) {
 	// count previous siblings matching filters
 	v = siblingIndex(node, filters...)
 	// count this node (if not empty) and filtered next siblings
-	for node := node; node.Data != nil; node = node.NextSibling(filters...) {
+	for ; node.Data != nil; node = node.NextSibling(filters...) {
 		v++
 	}
 	return
