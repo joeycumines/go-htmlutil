@@ -23,85 +23,92 @@ import (
 )
 
 type (
-	filterNodesConfig struct {
+	filterConfig struct {
 		Node    Node
 		Filters []func(node Node) bool
 		Find    bool
 	}
 )
 
-func copyValidFilters(input []func(node Node) bool) (output []func(node Node) bool) {
-	for _, filter := range input {
+func (c filterConfig) filters() []func(node Node) bool {
+	var result []func(node Node) bool
+	for _, filter := range c.Filters {
 		if filter != nil {
-			output = append(output, filter)
+			result = append(result, filter)
 		}
 	}
-	return
+	return result
 }
 
-func filterNodesWithConfig(config filterNodesConfig) []Node {
-	config.Filters = copyValidFilters(config.Filters)
-
-	if config.Node.Data != nil {
-		match := config.Node
-		config.Node.Match = &match
+func (c filterConfig) match() *Node {
+	if c.Node.Data == nil {
+		return c.Node.Match
 	}
+	if c.Node.Match != nil && c.Node.Match.Data == c.Node.Data {
+		return c.Node.Match
+	}
+	return &c.Node
+}
+
+func (c filterConfig) filter() []Node {
+	c.Filters = c.filters()
+
+	c.Node.Match = c.match()
 
 	var (
 		result []Node
-		fn     func(config filterNodesConfig)
+		fn     func(c filterConfig)
 	)
 
-	fn = func(config filterNodesConfig) {
-		if config.Node.Data == nil {
+	fn = func(c filterConfig) {
+		if c.Node.Data == nil {
 			return
 		}
 
-		if config.Find && len(result) != 0 {
+		if c.Find && len(result) != 0 {
 			return
 		}
 
-		if len(config.Filters) == 0 {
-			result = append(result, config.Node)
+		if len(c.Filters) == 0 {
+			result = append(result, c.Node)
 			return
 		}
 
 		start := len(result)
 
-		func(config filterNodesConfig) {
+		func(c filterConfig) {
 			var filter func(node Node) bool
 
-			for filter == nil && len(config.Filters) != 0 {
-				filter = config.Filters[0]
-				config.Filters = config.Filters[1:]
+			for filter == nil && len(c.Filters) != 0 {
+				filter = c.Filters[0]
+				c.Filters = c.Filters[1:]
 			}
 
-			if filter != nil && !filter(config.Node) {
+			if filter != nil && !filter(c.Node) {
 				return
 			}
 
-			if len(config.Filters) == 0 {
-				fn(config)
+			if len(c.Filters) == 0 {
+				fn(c)
 
 				return
 			}
 
-			match := config.Node
-			config.Node.Match = &match
+			c.Node.Match = c.match()
 
-			for c := config.Node.FirstChild(); c.Data != nil; c = c.NextSibling() {
-				config.Node = c
+			for n := c.Node.FirstChild(); n.Data != nil; n = n.NextSibling() {
+				c.Node = n
 
-				fn(config)
+				fn(c)
 			}
-		}(config)
+		}(c)
 
 		finish := len(result)
 
-		for c := config.Node.FirstChild(); c.Data != nil; c = c.NextSibling() {
-			config.Node = c
+		for n := c.Node.FirstChild(); n.Data != nil; n = n.NextSibling() {
+			c.Node = n
 
-			fn(config)
+			fn(c)
 
 			for i := start; i < finish; i++ {
 				for j := finish; j < len(result); j++ {
@@ -118,28 +125,24 @@ func filterNodesWithConfig(config filterNodesConfig) []Node {
 		}
 	}
 
-	fn(config)
+	fn(c)
 
 	return result
 }
 
 func filterNodes(node Node, filters ...func(node Node) bool) []Node {
-	return filterNodesWithConfig(
-		filterNodesConfig{
-			Node:    node,
-			Filters: filters,
-		},
-	)
+	return (filterConfig{
+		Node:    node,
+		Filters: filters,
+	}).filter()
 }
 
 func findNode(node Node, filters ...func(node Node) bool) (Node, bool) {
-	elements := filterNodesWithConfig(
-		filterNodesConfig{
-			Node:    node,
-			Filters: filters,
-			Find:    true,
-		},
-	)
+	elements := (filterConfig{
+		Node:    node,
+		Filters: filters,
+		Find:    true,
+	}).filter()
 	if len(elements) == 0 {
 		return Node{}, false
 	}

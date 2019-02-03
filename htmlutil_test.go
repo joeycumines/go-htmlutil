@@ -297,13 +297,11 @@ func TestFindNode(t *testing.T) {
 		if diff := deep.Equal(
 			len(output),
 			len(
-				filterNodesWithConfig(
-					filterNodesConfig{
-						Node:    Node{Data: input},
-						Filters: testCase.Filters,
-						Find:    true,
-					},
-				),
+				(filterConfig{
+					Node:    Node{Data: input},
+					Filters: testCase.Filters,
+					Find:    true,
+				}).filter(),
 			),
 		); diff != nil {
 			t.Error(strings.Join(append([]string{name + " find len diff:"}, diff...), "    \n"))
@@ -498,8 +496,8 @@ func TestNode_FilterNodes_depth(t *testing.T) {
 			t.Error("expected initial matches to always be set for nodes with data")
 		} else if v.Data.Type != html.DocumentNode {
 			t.Fatal(v.Data.Type)
-		} else if v.Match == nil || v.Data != v.Match.Data || v.Match.Match != nil {
-			t.Error("expected the final match to be identical to itself but without another match link")
+		} else if v.Match != nil {
+			t.Error("expected the final match to be without unnecessary dupes")
 		}
 		if a := nodes[0].Parent().Parent(); a.Data == nil || a.Match != v || a.Match == v.Match {
 			t.Error(a.Data)
