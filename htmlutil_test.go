@@ -376,7 +376,7 @@ func TestGetNode_success(t *testing.T) {
 		func(node Node) bool {
 			return node.Tag() == `b`
 		},
-	).EncodeHTML(); v != `<b>a</b>` {
+	).OuterHTML(); v != `<b>a</b>` {
 		t.Error(v)
 	}
 }
@@ -471,7 +471,7 @@ func TestNode_FilterNodes_depth(t *testing.T) {
 				return node.Tag() == "div" && node.GetAttrVal(``, `a`) == ""
 			},
 			func(node Node) bool {
-				return node.Type() == html.ElementNode && node.MatchDepth() == 2
+				return node.Type() == html.ElementNode && node.Offset() == 2
 			},
 		)
 	if len(nodes) != 2 {
@@ -480,7 +480,7 @@ func TestNode_FilterNodes_depth(t *testing.T) {
 	if v := nodes[0].Depth; v != 5 {
 		t.Error(v)
 	}
-	if v := nodes[0].MatchDepth(); v != 2 {
+	if v := nodes[0].Offset(); v != 2 {
 		t.Error(v)
 	}
 	if v := nodes[0].Match; v == nil {
@@ -489,7 +489,7 @@ func TestNode_FilterNodes_depth(t *testing.T) {
 		if v := v.Depth; v != 3 {
 			t.Error(v)
 		}
-		if v := v.MatchDepth(); v != 3 {
+		if v := v.Offset(); v != 3 {
 			t.Error(v)
 		}
 		if v := v.Match; v == nil || v.Data == nil {
@@ -506,7 +506,7 @@ func TestNode_FilterNodes_depth(t *testing.T) {
 				t.Error(v)
 			} else if v.Match != a.Match {
 				t.Error(v)
-			} else if v := v.EncodeHTML(); v != `<div a="5">five<div a="6">six</div></div>` {
+			} else if v := v.OuterHTML(); v != `<div a="5">five<div a="6">six</div></div>` {
 				t.Error(v)
 			}
 			a.Match = v.Match
@@ -518,7 +518,7 @@ func TestNode_FilterNodes_depth(t *testing.T) {
 	if v := nodes[0].Parent().PrevSibling(); v.Data == nil || v.Depth != 4 {
 		t.Error(v)
 	} else {
-		if v := v.EncodeHTML(); v != `<div a="2">two</div>` {
+		if v := v.OuterHTML(); v != `<div a="2">two</div>` {
 			t.Error(v)
 		}
 	}
@@ -535,10 +535,10 @@ func TestNode_FilterNodes_depth(t *testing.T) {
 			t.Error(v)
 		}
 	}
-	if v := nodes[0].EncodeHTML(); v != `<div a="4">four</div>` {
+	if v := nodes[0].OuterHTML(); v != `<div a="4">four</div>` {
 		t.Error(v)
 	}
-	if v := nodes[1].EncodeHTML(); v != `<div a="6">six</div>` {
+	if v := nodes[1].OuterHTML(); v != `<div a="6">six</div>` {
 		t.Error(v)
 	}
 }
@@ -572,18 +572,18 @@ func TestNode_FindNode_success(t *testing.T) {
 	if n.Depth != 5 {
 		t.Error(n.Depth)
 	} else {
-		if v := n.Parent(); v.Data == nil || v.Depth != 4 || v.EncodeHTML() != `<b><c id="search"></c></b>` {
-			t.Error(v.Data, v.Depth, v.EncodeHTML())
+		if v := n.Parent(); v.Data == nil || v.Depth != 4 || v.OuterHTML() != `<b><c id="search"></c></b>` {
+			t.Error(v.Data, v.Depth, v.OuterHTML())
 		}
-		if v := n.Parent(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); v.Data == nil || v.Depth != 4 || v.EncodeHTML() != `<b><c id="search"></c></b>` {
-			t.Error(v.Data, v.Depth, v.EncodeHTML())
+		if v := n.Parent(nil, nil, nil, nil, nil, nil, nil, nil, nil, nil); v.Data == nil || v.Depth != 4 || v.OuterHTML() != `<b><c id="search"></c></b>` {
+			t.Error(v.Data, v.Depth, v.OuterHTML())
 		}
 		if v := n.Parent(
 			func(node Node) bool {
 				return true
 			},
-		); v.Data == nil || v.Depth != 4 || v.EncodeHTML() != `<b><c id="search"></c></b>` {
-			t.Error(v.Data, v.Depth, v.EncodeHTML())
+		); v.Data == nil || v.Depth != 4 || v.OuterHTML() != `<b><c id="search"></c></b>` {
+			t.Error(v.Data, v.Depth, v.OuterHTML())
 		}
 		if v := n.Parent(
 			nil,
@@ -592,8 +592,8 @@ func TestNode_FindNode_success(t *testing.T) {
 			func(node Node) bool {
 				return node.Tag() == `b`
 			},
-		); v.Data == nil || v.Depth != 4 || v.EncodeHTML() != `<b><c id="search"></c></b>` {
-			t.Error(v.Data, v.Depth, v.EncodeHTML())
+		); v.Data == nil || v.Depth != 4 || v.OuterHTML() != `<b><c id="search"></c></b>` {
+			t.Error(v.Data, v.Depth, v.OuterHTML())
 		}
 		if v := n.Parent(
 			nil,
@@ -602,8 +602,8 @@ func TestNode_FindNode_success(t *testing.T) {
 			func(node Node) bool {
 				return node.Tag() == `body`
 			},
-		); v.Data == nil || v.Depth != 2 || v.EncodeHTML() != `<body><a><b></b><b><c id="search"></c></b><d><e></e><f><g></g></f></d></a></body>` {
-			t.Error(v.Data, v.Depth, v.EncodeHTML())
+		); v.Data == nil || v.Depth != 2 || v.OuterHTML() != `<body><a><b></b><b><c id="search"></c></b><d><e></e><f><g></g></f></d></a></body>` {
+			t.Error(v.Data, v.Depth, v.OuterHTML())
 		}
 	}
 
@@ -840,19 +840,19 @@ func TestNode_Children(t *testing.T) {
 	if v := nodes[0].Type(); v != html.ElementNode {
 		t.Fatal(v)
 	}
-	if v := nodes[0].EncodeHTML(); v != `<b></b>` {
+	if v := nodes[0].OuterHTML(); v != `<b></b>` {
 		t.Fatal(v)
 	}
 	if v := nodes[1].Type(); v != html.TextNode {
 		t.Fatal(v)
 	}
-	if v := nodes[1].EncodeHTML(); v != ` ` {
+	if v := nodes[1].OuterHTML(); v != ` ` {
 		t.Fatal(v)
 	}
 	if v := nodes[2].Type(); v != html.ElementNode {
 		t.Fatal(v)
 	}
-	if v := nodes[2].EncodeHTML(); v != `<b><c id="search"></c></b>` {
+	if v := nodes[2].OuterHTML(); v != `<b><c id="search"></c></b>` {
 		t.Fatal(v)
 	}
 }
@@ -876,7 +876,7 @@ func TestNode_GetNode_success(t *testing.T) {
 			func(node Node) bool {
 				return node.Tag() == `b`
 			},
-		).EncodeHTML(); v != `<b>a</b>` {
+		).OuterHTML(); v != `<b>a</b>` {
 		t.Error(v)
 	}
 }
@@ -906,7 +906,7 @@ func TestNode_Range_bailOutTrue(t *testing.T) {
 	)
 	node.Range(
 		func(i int, node Node) bool {
-			values = append(values, node.EncodeHTML())
+			values = append(values, node.OuterHTML())
 			if i != index {
 				t.Fatal(i, index)
 			}
@@ -939,7 +939,7 @@ func TestNode_Range_bailOutFalse(t *testing.T) {
 	)
 	node.Range(
 		func(i int, node Node) bool {
-			values = append(values, node.EncodeHTML())
+			values = append(values, node.OuterHTML())
 			if i != index {
 				t.Fatal(i, index)
 			}
@@ -1023,14 +1023,14 @@ func TestNode_Range_filter(t *testing.T) {
 		count  int
 		filter = func(node Node) bool {
 			count++
-			return node.MatchDepth() == 0 &&
+			return node.Offset() == 0 &&
 				node.Type() == html.ElementNode &&
 				node.Tag() != `no`
 		}
 	)
 	node.Range(
 		func(i int, node Node) bool {
-			values = append(values, node.EncodeHTML())
+			values = append(values, node.OuterHTML())
 			if i != index {
 				t.Fatal(i, index)
 			}
@@ -1066,7 +1066,7 @@ func TestNode_Range_filter(t *testing.T) {
 	func() {
 		var children []string
 		for _, node := range node.Children(filter) {
-			children = append(children, node.EncodeHTML())
+			children = append(children, node.OuterHTML())
 		}
 		if len(children) != 3 {
 			t.Error(len(children))
@@ -1105,7 +1105,7 @@ func TestNode_Range_filter(t *testing.T) {
 	func() {
 		var children []string
 		for node := node.LastChild(filter); node.Data != nil; node = node.PrevSibling(filter) {
-			children = append([]string{node.EncodeHTML()}, children...)
+			children = append([]string{node.OuterHTML()}, children...)
 		}
 		if len(children) != 3 {
 			t.Error(len(children))
