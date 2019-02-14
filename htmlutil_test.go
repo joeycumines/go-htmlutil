@@ -1118,3 +1118,43 @@ func TestNode_Range_filter(t *testing.T) {
 		}
 	}()
 }
+
+func TestNode_HasClass(t *testing.T) {
+	if v := parseElement(`<a class=""></a>`).HasClass(``); v {
+		t.Error(v)
+	}
+	if v := parseElement(`<a class="  "></a>`).HasClass(`two`); v {
+		t.Error(v)
+	}
+	if v := parseElement(`<a class="two"></a>`).HasClass(`two`); !v {
+		t.Error(v)
+	}
+	if v := parseElement(`<a class="two"></a>`).HasClass(`TWO`); v {
+		t.Error(v)
+	}
+	if v := parseElement(`<a class="one three"></a>`).HasClass(`two`); v {
+		t.Error(v)
+	}
+	if v := parseElement(`<a class="one TWO three"></a>`).HasClass(`TWO`); !v {
+		t.Error(v)
+	}
+	if v := parse(`<a class="two"></a>`).HasClass(`two`); v {
+		t.Error(v)
+	}
+	if v := (Node{}).HasClass(`two`); v {
+		t.Error(v)
+	}
+}
+
+func TestNode_Classes(t *testing.T) {
+	node := parseElement(`<a class="` + " \t\r\none \t\r\ntwo \t\r\n" + `"></a>`)
+	if diff := deep.Equal(
+		node.Classes(),
+		[]string{
+			`one`,
+			`two`,
+		},
+	); diff != nil {
+		t.Error(diff)
+	}
+}

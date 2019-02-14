@@ -47,6 +47,7 @@ import (
 	"errors"
 	"golang.org/x/net/html"
 	"io"
+	"strings"
 )
 
 // Node is the data structure this package provides to allow utilisation of utility methods + extra metadata such
@@ -106,6 +107,25 @@ func (n Node) Tag() string {
 		return n.Data.Data
 	}
 	return ""
+}
+
+// Classes will return all the (whitespace-separated) values for the (first) `class` attribute, or an empty slice
+// if n is not a valid element node with a class attribute with at least one non-whitespace character
+func (n Node) Classes() []string {
+	if n.Type() != html.ElementNode {
+		return nil
+	}
+	return strings.Fields(n.GetAttrVal(``, `class`))
+}
+
+// HasClass will return true if n is a valid element node with the given html class (case sensitive)
+func (n Node) HasClass(class string) bool {
+	for _, v := range n.Classes() {
+		if v == class {
+			return true
+		}
+	}
+	return false
 }
 
 // GetAttr matches on the first attribute (if any) for this node with the same namespace and key (key being case
