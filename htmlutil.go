@@ -12,7 +12,7 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
- */
+*/
 
 // Package htmlutil implements a wrapper for Golang's html5 tokeniser / parser implementation, making it much easier to
 // find and extract information, aiming to be powerful and intuitive while remaining a minimal and logical extension.
@@ -153,7 +153,14 @@ func (n Node) OuterHTML() string {
 
 // OuterText builds a string from the data of all text nodes in the sub-tree, starting from and including `n`
 func (n Node) OuterText() string {
-	return encodeText(n.Data)
+	return string(encodeText(n.Data))
+}
+
+// OuterWords builds a space-separated string from the whitespace-separated data of all text nodes in the sub-tree,
+// starting from and including `n`, note that text separated / split across multiple elements will be considered as
+// multiple words (words within non-empty sibling elements will be split by a single space)
+func (n Node) OuterWords() string {
+	return string(encodeWords(n.Data))
 }
 
 // InnerHTML builds a string using the outer html of all children matching all filters (see the `FindNode` method)
@@ -175,6 +182,25 @@ func (n Node) InnerText(filters ...func(node Node) bool) string {
 	n.Range(
 		func(i int, node Node) bool {
 			b = append(b, []byte(node.OuterText())...)
+			return true
+		},
+		filters...,
+	)
+	return string(b)
+}
+
+// InnerWords builds a string using the outer words of all children matching all filters (see the `FindNode` method and
+// the `OuterWords` methods)
+func (n Node) InnerWords(filters ...func(node Node) bool) string {
+	var b []byte
+	n.Range(
+		func(i int, node Node) bool {
+			if s := node.OuterWords(); s != `` {
+				if len(b) != 0 {
+					b = append(b, ' ')
+				}
+				b = append(b, []byte(s)...)
+			}
 			return true
 		},
 		filters...,

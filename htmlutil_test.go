@@ -12,7 +12,7 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
- */
+*/
 
 package htmlutil
 
@@ -339,8 +339,24 @@ func TestEncodeHTML_panic(t *testing.T) {
 }
 
 func TestEncodeText_nil(t *testing.T) {
-	if v := encodeText(nil); v != "" {
+	if v := encodeText(nil); v != nil {
 		t.Fatal(v)
+	}
+}
+
+func TestEncodeWords_nil(t *testing.T) {
+	if v := encodeWords(nil); v != nil {
+		t.Fatal(v)
+	}
+}
+
+func TestEncodeWords_siblings(t *testing.T) {
+	node, err := Parse(strings.NewReader(`<div>one</div><div>two</div><div><div><div></div></div></div><div></div><div><div></div><div>three</div></div><div>four</div>`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if v := string(encodeWords(node.Data)); v != `one two three four` {
+		t.Error(v)
 	}
 }
 
@@ -423,6 +439,20 @@ THREE
 FOUR   !
 
 ` {
+		t.Fatal(v)
+	}
+	if v := node.InnerWords(); v != `ONE TWO THREE FOUR !` {
+		t.Fatal(v)
+	}
+	if v := node.InnerWords(func(node Node) bool {
+		return node.Offset() == 0 &&
+			node.Type() == html.TextNode
+	}); v != `FOUR !` {
+		t.Fatal(v)
+	}
+	if v := node.InnerWords(func(node Node) bool {
+		return node.Offset() == 100
+	}); v != `` {
 		t.Fatal(v)
 	}
 }

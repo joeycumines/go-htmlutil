@@ -11,6 +11,8 @@ As of v1.0.0 the API is stable and used in multiple (personal) projects. Unless 
 
 ## Change Log
 
+**2019-08-20** v1.2.0 words methods
+
 **2019-02-14** v1.1.0 classes methods
 
 **2019-02-11** v1.0.0 initial release

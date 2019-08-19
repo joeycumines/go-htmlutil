@@ -12,7 +12,7 @@
    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
    See the License for the specific language governing permissions and
    limitations under the License.
- */
+*/
 
 package htmlutil
 
@@ -154,24 +154,6 @@ func getNode(node Node, filters ...func(node Node) bool) Node {
 	return result
 }
 
-func encodeTextBytes(node *html.Node) []byte {
-	if node == nil {
-		return nil
-	}
-	if node.Type == html.TextNode {
-		return []byte(node.Data)
-	}
-	var b []byte
-	for node := node.FirstChild; node != nil; node = node.NextSibling {
-		b = append(b, encodeTextBytes(node)...)
-	}
-	return b
-}
-
-func encodeText(node *html.Node) string {
-	return string(encodeTextBytes(node))
-}
-
 func encodeHTML(node *html.Node) string {
 	if node == nil {
 		return ""
@@ -181,6 +163,44 @@ func encodeHTML(node *html.Node) string {
 		panic(err)
 	}
 	return buffer.String()
+}
+
+func encodeText(node *html.Node) []byte {
+	if node == nil {
+		return nil
+	}
+	if node.Type == html.TextNode {
+		return []byte(node.Data)
+	}
+	var b []byte
+	for node := node.FirstChild; node != nil; node = node.NextSibling {
+		b = append(b, encodeText(node)...)
+	}
+	return b
+}
+
+func encodeWords(node *html.Node) (b []byte) {
+	if node == nil {
+		return
+	}
+	if node.Type == html.TextNode {
+		for _, word := range strings.Fields(node.Data) {
+			if len(b) != 0 {
+				b = append(b, ' ')
+			}
+			b = append(b, []byte(word)...)
+		}
+		return
+	}
+	for node := node.FirstChild; node != nil; node = node.NextSibling {
+		if words := encodeWords(node); len(words) != 0 {
+			if len(b) != 0 {
+				b = append(b, ' ')
+			}
+			b = append(b, words...)
+		}
+	}
+	return
 }
 
 func getAttr(namespace string, key string, attributes ...html.Attribute) (html.Attribute, bool) {
